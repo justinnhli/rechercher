@@ -9,7 +9,7 @@ from heapq import heappush, heappop
 class Domain:
     @staticmethod
     @abstractmethod
-    def get_state_class():
+    def get_state():
         raise NotImplementedError()
     @abstractmethod
     def get_successors(self, state):
@@ -28,7 +28,9 @@ class SearchProblem:
     def is_at_goal(self, state):
         return self.goal_test(state)
     def get_heuristic_cost(self, state):
-        return self.heuristic(state)
+        if self.heuristic:
+            return self.heuristic(state)
+        return 0
 
 class SearchNode:
     @staticmethod

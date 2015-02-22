@@ -9,16 +9,19 @@ class GridWorld(Domain):
         self.width = width
         self.height = height
     @staticmethod
-    def get_state_class():
-        return namedtuple("State", ("x", "y"))
+    def get_state(**kwargs):
+        return namedtuple("State", ("x", "y"))(**kwargs)
+    @staticmethod
+    def heuristic(goal):
+        return (lambda state: abs(state.x - goal.x) + abs(state.y - goal.y))
     def get_successors(self, state):
         successors = []
         if state.x - 1 > 0:
-            successors.append(("left", GridWorld.get_state_class()(x=state.x-1, y=state.y), 1))
+            successors.append(("left", GridWorld.get_state(x=state.x-1, y=state.y), 1))
         if state.y - 1 > 0:
-            successors.append(("down", GridWorld.get_state_class()(x=state.x, y=state.y-1), 1))
+            successors.append(("down", GridWorld.get_state(x=state.x, y=state.y-1), 1))
         if state.x + 1 <= self.width:
-            successors.append(("right", GridWorld.get_state_class()(x=state.x+1, y=state.y), 1))
+            successors.append(("right", GridWorld.get_state(x=state.x+1, y=state.y), 1))
         if state.y + 1 <= self.width:
-            successors.append(("right", GridWorld.get_state_class()(x=state.x, y=state.y+1), 1))
+            successors.append(("up", GridWorld.get_state(x=state.x, y=state.y+1), 1))
         return successors
