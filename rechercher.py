@@ -35,11 +35,12 @@ class SearchProblem:
 class SearchNode:
     @staticmethod
     def get_initial_search_node(state):
-        return SearchNode([state,], [], 0)
-    def __init__(self, path, actions, cost):
+        return SearchNode([state,], [], 0, 0)
+    def __init__(self, path, actions, cost, heuristic=0):
         self.path = path
         self.actions = actions
         self.cost = cost
+        self.heuristic = heuristic
     @property
     def state(self):
         return self.path[-1]
@@ -58,6 +59,7 @@ SearchAlgorithm = namedtuple("SearchAlgorithm", ("key_fn", "filter_fn"))
 DEPTH_FIRST_SEARCH = SearchAlgorithm((lambda node: -node.depth), None)
 BREADTH_FIRST_SEARCH = SearchAlgorithm((lambda node: node.depth), None)
 UNIFORM_COST_SEARCH = SearchAlgorithm((lambda node: node.cost), None)
+ASTAR_SEARCH = SearchAlgorithm((lambda node: node.cost + node.heuristic), None)
 
 def search(search_problem, algo):
     fringe = [SearchNode.get_initial_search_node(search_problem.get_initial_state()),]
@@ -72,7 +74,7 @@ def search(search_problem, algo):
             return cur_node
         for action, state, cost in search_problem.domain.get_successors(cur_node.state):
             if state not in visited:
-                node = SearchNode(cur_node.path + [state,], cur_node.actions + [action,], cur_node.cost + cost)
+                node = SearchNode(cur_node.path + [state,], cur_node.actions + [action,], cur_node.cost + cost, search_problem.heuristic(state))
                 if state in fringe_priority and algo.key_fn(fringe_priority[state]) > algo.key_fn(node):
                     fringe.remove(fringe_priority[state])
                 fringe_priority[state] = node
