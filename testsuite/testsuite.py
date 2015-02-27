@@ -4,7 +4,7 @@ import unittest
 
 import rechercher
 
-class TestGridWorldSearch(unittest.TestCase):
+class Search_GridWorld(unittest.TestCase):
     def setUp(self):
         self.problem = rechercher.domains.GridWorld(20, 20, (0, 0), (19, 15))
     def test_bfs(self):
@@ -20,11 +20,22 @@ class TestGridWorldSearch(unittest.TestCase):
         self.assertIsNotNone(solution)
         self.assertEqual(len(solution.path), 35)
 
-class TestMazeSearch(unittest.TestCase):
+class Search_Maze(unittest.TestCase):
     def setUp(self):
-        maze_string = ""
-        with open("maze-search.data") as fd:
-            maze_string = fd.read()
+        maze_string = """
+            #@#####################
+            #   # #   #   # #     #
+            # ### # # # ### # ### #
+            # #     #           # #
+            # # ### # ### #########
+            #     # # #           #
+            # # # ####### ####### #
+            # # #   #         #   #
+            # # ##### # # # # ### #
+            # #   #   # # # #   # #
+            #####################*#
+        """
+        maze_string = "\n".join(line.strip() for line in maze_string.splitlines()).strip()
         self.problem = rechercher.domains.Maze(maze_string)
     def test_bfs(self):
         solution, num_visited = rechercher.breadth_first_search.search(self.problem, verbose=True)
@@ -41,6 +52,14 @@ class TestMazeSearch(unittest.TestCase):
         self.assertIsNotNone(solution)
         self.assertEqual(len(solution.path), 39)
         self.assertEqual(num_visited, 83)
+
+class Search_WordLadder(unittest.TestCase):
+    def setUp(self):
+        from os.path import dirname, join as join_path
+        self.problem = rechercher.domains.WordLadder("yea", "nay", links_file=join_path(dirname(__file__), "../data/wordladder/links"))
+    def test_astar(self):
+        solution = rechercher.breadth_first_search.search(self.problem)
+        self.assertEqual(len(solution.path), 6)
 
 if __name__ == "__main__":
     """

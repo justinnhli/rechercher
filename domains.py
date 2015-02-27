@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from enum import Enum, unique
 
 from .search import SearchProblem
@@ -6,10 +6,13 @@ from .search import SearchProblem
 class GridWorld(SearchProblem):
     @staticmethod
     def state(**kwargs):
-        return namedtuple("State", ("x", "y"))(**kwargs)
+        return namedtuple("GridWorldState", ("x", "y"))(**kwargs)
+    @staticmethod
+    def manhattan_distance(state1, state2):
+        return abs(state1.x - state2.x) + abs(state1.y - state2.y)
     @staticmethod
     def heuristic(goal):
-        return (lambda state: abs(state.x - goal.x) + abs(state.y - goal.y))
+        return (lambda state: GridWorld.manhattan_distance(state, goal))
     def __init__(self, width, height, start, goal):
         self.width = width
         self.height = height
@@ -75,3 +78,63 @@ class Maze(GridWorld):
                 else:
                     row_string.append(" ")
             print("".join(row_string))
+
+class WordLadder(SearchProblem):
+    DICTIONARY_PATH = "/usr/share/dict/words"
+    @staticmethod
+    def state(**kwargs):
+        return namedtuple("WordLadderState", "word")(**kwargs)
+    @staticmethod
+    def levenshtein_distance(s, t):
+        if s == t:
+            return 0
+        elif len(s) == 0:
+            return len(t)
+        elif len(t) == 0:
+            return len(s)
+        prev_dist = list(range(len(t) + 1))
+        cur_dist = (len(t) + 1) * [0,]
+        for i in range(len(s)):
+            cur_dist[0] = i + 1
+            for j in range(len(t)):
+                cur_dist[j+1] = min(cur_dist[j] + 1, prev_dist[j+1] + 1, prev_dist[j] + (0 if s[i] == t[j] else 1))
+            for j in range(len(cur_dist)):
+                prev_dist[j] = cur_dist[j]
+        return cur_dist[-1]
+    @staticmethod
+    def heuristic(goal):
+        return (lambda state: WordLadder.levenshtein_distance(state, goal))
+    @staticmethod
+    def build_links(words, fixed_length=True):
+        links = defaultdict(set)
+        words = sorted(words)
+        for i in range(len(words)):
+            word = words[i]
+            for j in range(i+1, len(words)):
+                other_word = words[j]
+                if len(word) == len(other_word) or (not fixed_length and abs(len(words[i]) - len(words[j])) == 1):
+                    if WordLadder.levenshtein_distance(word, other_word) == 1:
+                        links[word].add(other_word)
+                        links[other_word].add(word)
+        return links
+    def __init__(self, start, end, fixed_length=True, links_file=None, dictionary_file=None):
+        self.end = self.state(word=end)
+        self.fixed_length = fixed_length
+        self.links = {}
+        if links_file is None:
+            if dictionary_file is None:
+                dictionary_file = WordLadder.DICTIONARY_PATH
+            with open(dictionary_file) as fd:
+                self.links = WordLadder.build_links(fd.read().splitlines(), self.fixed_length)
+        else:
+            from ast import literal_eval
+            with open(links_file) as fd:
+                self.links = literal_eval("{" + fd.read() + "}")
+        super().__init__(
+                self.state(word=start),
+                (lambda state: state == self.end),
+                (lambda state: WordLadder.heuristic(self.end)(state)))
+    def successors(self, state):
+        return list((None, WordLadder.state(word=word), 1) for word in self.links[state.word] if not self.fixed_length or len(word) == len(state.word))
+    def draw(self, state):
+        print(state.word)
