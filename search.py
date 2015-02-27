@@ -18,6 +18,9 @@ class _SearchNode:
         return hash(self.state)
 
 class SearchProblem:
+    @staticmethod
+    def state(**kwargs):
+        raise NotImplementedError()
     def __init__(self, start, goal_test, heuristic=None):
         self._start = start
         self._goal_test = goal_test

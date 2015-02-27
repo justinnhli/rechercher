@@ -1,7 +1,7 @@
 from collections import namedtuple
 from enum import Enum, unique
 
-from rechercher import SearchProblem
+from .search import SearchProblem
 
 class GridWorld(SearchProblem):
     @staticmethod
