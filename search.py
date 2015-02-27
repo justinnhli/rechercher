@@ -1,40 +1,24 @@
-#!/usr/bin/env python3
-
 from abc import abstractmethod
 from collections import namedtuple
 from heapq import heappush, heappop
 
-# DOMAINS
-
-class Domain:
-    @staticmethod
-    @abstractmethod
-    def get_state():
-        raise NotImplementedError()
-    @abstractmethod
-    def get_successors(self, state):
-        raise NotImplementedError()
-
-# GENERIC SEARCH
-
 class SearchProblem:
-    def __init__(self, domain, initial_state, goal_test, heuristic=None):
-        self.domain = domain
-        self.initial_state = initial_state
-        self.goal_test = goal_test
-        self.heuristic = heuristic
-    def get_initial_state(self):
-        return self.initial_state
+    def __init__(self, start, goal_test, heuristic=None):
+        self._start = start
+        self._goal_test = goal_test
+        self._heuristic = heuristic
+    def initial_state(self):
+        return self._start
     def is_at_goal(self, state):
-        return self.goal_test(state)
-    def get_heuristic_cost(self, state):
-        if self.heuristic:
-            return self.heuristic(state)
+        return self._goal_test(state)
+    def heuristic_cost(self, state):
+        if self._heuristic:
+            return self._heuristic(state)
         return 0
 
 class SearchNode:
     @staticmethod
-    def get_initial_search_node(state):
+    def initial_search_node(state):
         return SearchNode([state,], [], 0, 0)
     def __init__(self, path, actions, cost, heuristic=0):
         self.path = path
@@ -62,7 +46,7 @@ UNIFORM_COST_SEARCH = SearchAlgorithm((lambda node: node.cost), None)
 ASTAR_SEARCH = SearchAlgorithm((lambda node: node.cost + node.heuristic), None)
 
 def search(search_problem, algo):
-    fringe = [SearchNode.get_initial_search_node(search_problem.get_initial_state()),]
+    fringe = [SearchNode.initial_search_node(search_problem.initial_state()),]
     fringe_priority = {}
     visited = set()
     while fringe:
@@ -70,11 +54,11 @@ def search(search_problem, algo):
         while cur_node.state in visited:
             cur_node = fringe.pop(0)
         visited.add(cur_node.state)
-        if search_problem.goal_test(cur_node.state):
+        if search_problem.is_at_goal(cur_node.state):
             return cur_node
-        for action, state, cost in search_problem.domain.get_successors(cur_node.state):
+        for action, state, cost in search_problem.successors(cur_node.state):
             if state not in visited:
-                node = SearchNode(cur_node.path + [state,], cur_node.actions + [action,], cur_node.cost + cost, search_problem.heuristic(state))
+                node = SearchNode(cur_node.path + [state,], cur_node.actions + [action,], cur_node.cost + cost, search_problem.heuristic_cost(state))
                 if state in fringe_priority and algo.key_fn(fringe_priority[state]) > algo.key_fn(node):
                     fringe.remove(fringe_priority[state])
                 fringe_priority[state] = node
