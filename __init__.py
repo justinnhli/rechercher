@@ -1,3 +1,3 @@
-from .search import DEPTH_FIRST_SEARCH, BREADTH_FIRST_SEARCH, UNIFORM_COST_SEARCH, ASTAR_SEARCH
-from .search import search, SearchProblem
+from .search import SearchProblem
+from .search import depth_first_search, breadth_first_search, uniform_cost_search, astar_search
 from .domains import GridWorld, Maze
