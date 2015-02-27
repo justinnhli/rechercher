@@ -55,10 +55,10 @@ class Search_Maze(unittest.TestCase):
 
 class Search_WordLadder(unittest.TestCase):
     def setUp(self):
-        from os.path import dirname, join as join_path
-        self.problem = rechercher.domains.WordLadder("yea", "nay", links_file=join_path(dirname(__file__), "../data/wordladder/links"))
+        self.problem = rechercher.domains.WordLadder("yea", "nay")
     def test_astar(self):
         solution = rechercher.breadth_first_search.search(self.problem)
+        self.assertIsNotNone(solution)
         self.assertEqual(len(solution.path), 6)
 
 if __name__ == "__main__":

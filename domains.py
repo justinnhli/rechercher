@@ -80,7 +80,6 @@ class Maze(GridWorld):
             print("".join(row_string))
 
 class WordLadder(SearchProblem):
-    DICTIONARY_PATH = "/usr/share/dict/words"
     @staticmethod
     def state(**kwargs):
         return namedtuple("WordLadderState", "word")(**kwargs)
@@ -121,15 +120,16 @@ class WordLadder(SearchProblem):
         self.end = self.state(word=end)
         self.fixed_length = fixed_length
         self.links = {}
-        if links_file is None:
-            if dictionary_file is None:
-                dictionary_file = WordLadder.DICTIONARY_PATH
-            with open(dictionary_file) as fd:
-                self.links = WordLadder.build_links(fd.read().splitlines(), self.fixed_length)
-        else:
+        if links_file is None and dictionary_file is None:
+            from os.path import dirname, join as join_path
+            links_file = join_path(dirname(__file__), "data/wordladder/links")
+        if links_file is not None:
             from ast import literal_eval
             with open(links_file) as fd:
                 self.links = literal_eval("{" + fd.read() + "}")
+        else:
+            with open(dictionary_file) as fd:
+                self.links = WordLadder.build_links(fd.read().splitlines(), self.fixed_length)
         super().__init__(
                 self.state(word=start),
                 (lambda state: state == self.end),

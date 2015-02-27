@@ -50,8 +50,10 @@ class AbstractSearchAlgorithm:
         result = None
         while result is None and fringe:
             cur_node = fringe.pop(0)
-            while cur_node.state in visited:
+            while fringe and cur_node.state in visited:
                 cur_node = fringe.pop(0)
+            if not fringe and cur_node.state in visited:
+                break
             visited.add(cur_node.state)
             if animate:
                 try:
@@ -77,4 +79,5 @@ class AbstractSearchAlgorithm:
 depth_first_search = AbstractSearchAlgorithm((lambda node: -node.depth), None)
 breadth_first_search = AbstractSearchAlgorithm((lambda node: node.depth), None)
 uniform_cost_search = AbstractSearchAlgorithm((lambda node: node.cost), None)
+greedy_best_first_search = AbstractSearchAlgorithm((lambda node: node.heuristic), None)
 astar_search = AbstractSearchAlgorithm((lambda node: node.cost + node.heuristic), None)
