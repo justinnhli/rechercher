@@ -1,7 +1,12 @@
+import math
+from ast import literal_eval
 from collections import defaultdict, namedtuple
+from copy import copy
 from enum import Enum, unique
+from itertools import chain
+from os.path import dirname, join as join_path
 
-from .search import SearchProblem
+from .search import Action, SearchProblem
 
 class GridWorld(SearchProblem):
     @staticmethod
@@ -16,21 +21,21 @@ class GridWorld(SearchProblem):
     def __init__(self, width, height, start, goal):
         self.width = width
         self.height = height
-        self.goal = self.state(x=goal[0], y=goal[1])
+        self.goal = GridWorld.state(x=goal[0], y=goal[1])
         super().__init__(
-                self.state(x=start[0], y=start[1]),
+                GridWorld.state(x=start[0], y=start[1]),
                 (lambda state: state == self.goal),
-                (lambda state: GridWorld.heuristic(self.goal)(state)))
+                GridWorld.heuristic(self.goal))
     def successors(self, state):
         successors = []
         if state.x - 1 >= 0:
-            successors.append(("left", GridWorld.state(x=state.x-1, y=state.y), 1))
+            successors.append(Action("left", GridWorld.state(x=state.x-1, y=state.y), 1))
         if state.y - 1 >= 0:
-            successors.append(("down", GridWorld.state(x=state.x, y=state.y-1), 1))
+            successors.append(Action("down", GridWorld.state(x=state.x, y=state.y-1), 1))
         if state.x + 1 < self.width:
-            successors.append(("right", GridWorld.state(x=state.x+1, y=state.y), 1))
+            successors.append(Action("right", GridWorld.state(x=state.x+1, y=state.y), 1))
         if state.y + 1 < self.height:
-            successors.append(("up", GridWorld.state(x=state.x, y=state.y+1), 1))
+            successors.append(Action("up", GridWorld.state(x=state.x, y=state.y+1), 1))
         return successors
 
 class Maze(GridWorld):
@@ -66,7 +71,7 @@ class Maze(GridWorld):
             self.maze.append(row_tiles)
         super().__init__(len(self.maze[0]), len(self.maze), self.start, self.goal)
     def successors(self, state):
-        return [(action, successor, cost) for action, successor, cost in super().successors(state) if self.maze[successor.y][successor.x] != Maze.Tile.wall]
+        return [Action(action, successor, cost) for action, successor, cost in super().successors(state) if self.maze[successor.y][successor.x] != Maze.Tile.wall]
     def draw(self, state):
         for row in range(len(self.maze)):
             row_string = []
@@ -93,12 +98,11 @@ class WordLadder(SearchProblem):
             return len(s)
         prev_dist = list(range(len(t) + 1))
         cur_dist = (len(t) + 1) * [0,]
-        for i in range(len(s)):
+        for i, s_char in enumerate(s):
             cur_dist[0] = i + 1
-            for j in range(len(t)):
-                cur_dist[j+1] = min(cur_dist[j] + 1, prev_dist[j+1] + 1, prev_dist[j] + (0 if s[i] == t[j] else 1))
-            for j in range(len(cur_dist)):
-                prev_dist[j] = cur_dist[j]
+            for j, t_char in enumerate(t):
+                cur_dist[j+1] = min(cur_dist[j] + 1, prev_dist[j+1] + 1, prev_dist[j] + (0 if s_char == t_char else 1))
+            prev_dist = copy(cur_dist)
         return cur_dist[-1]
     @staticmethod
     def heuristic(goal):
@@ -107,8 +111,7 @@ class WordLadder(SearchProblem):
     def build_links(words, fixed_length=True):
         links = defaultdict(set)
         words = sorted(words)
-        for i in range(len(words)):
-            word = words[i]
+        for i, word in enumerate(words):
             for j in range(i+1, len(words)):
                 other_word = words[j]
                 if len(word) == len(other_word) or (not fixed_length and abs(len(words[i]) - len(words[j])) == 1):
@@ -117,24 +120,68 @@ class WordLadder(SearchProblem):
                         links[other_word].add(word)
         return links
     def __init__(self, start, end, fixed_length=True, links_file=None, dictionary_file=None):
-        self.end = self.state(word=end)
+        self.end = WordLadder.state(word=end)
         self.fixed_length = fixed_length
-        self.links = {}
+        self.links = defaultdict(set)
         if links_file is None and dictionary_file is None:
-            from os.path import dirname, join as join_path
             links_file = join_path(dirname(__file__), "data/wordladder/links")
         if links_file is not None:
-            from ast import literal_eval
             with open(links_file) as fd:
                 self.links = literal_eval("{" + fd.read() + "}")
         else:
             with open(dictionary_file) as fd:
                 self.links = WordLadder.build_links(fd.read().splitlines(), self.fixed_length)
         super().__init__(
-                self.state(word=start),
+                WordLadder.state(word=start),
                 (lambda state: state == self.end),
-                (lambda state: WordLadder.heuristic(self.end)(state)))
+                WordLadder.heuristic(self.end))
     def successors(self, state):
-        return list((None, WordLadder.state(word=word), 1) for word in self.links[state.word] if not self.fixed_length or len(word) == len(state.word))
-    def draw(self, state):
-        print(state.word)
+        return list(Action(None, WordLadder.state(word=word), 1) for word in self.links[state.word] if not self.fixed_length or len(word) == len(state.word))
+
+class SlidingPuzzle(SearchProblem):
+    @staticmethod
+    def state(**kwargs):
+        return namedtuple("SlidingPuzzleState", "grid")(**kwargs)
+    @staticmethod
+    def in_bounds(row, col, size):
+        return (0 <= row < size and 0 <= col < size)
+    @staticmethod
+    def coord_to_index(row, col, size):
+        return row * size + col
+    @staticmethod
+    def index_to_coord(index, size):
+        return (index // size, index % size)
+    @staticmethod
+    def heuristic(goal):
+        def _heuristic(state):
+            total = 0
+            size = int(math.sqrt(len(state.grid)))
+            for i in range(1, 9):
+                goal_row, goal_col = SlidingPuzzle.index_to_coord(goal.grid.index(i), size)
+                row, col = SlidingPuzzle.index_to_coord(state.grid.index(i), size)
+                total += abs(goal_row - row) + abs(goal_col - col)
+            return total
+        return _heuristic
+    def __init__(self, order):
+        assert len(order) == len(set(order))
+        self.size = math.sqrt(len(order))
+        assert self.size.is_integer()
+        self.size = int(self.size)
+        order = tuple(order)
+        self.goal = SlidingPuzzle.state(grid=tuple(sorted(order)[1:] + [0,]))
+        super().__init__(
+                SlidingPuzzle.state(grid=order),
+                (lambda state: state == self.goal),
+                SlidingPuzzle.heuristic(self.goal))
+    def successors(self, state):
+        index = state.grid.index(0)
+        row, col = SlidingPuzzle.index_to_coord(index, self.size)
+        result = []
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if SlidingPuzzle.in_bounds(row + dr, col + dc, self.size):
+                swap_index = SlidingPuzzle.coord_to_index(row + dr, col + dc, self.size)
+                next_state = list(state.grid)
+                next_state[index] = next_state[swap_index]
+                next_state[swap_index] = 0
+                result.append(Action(None, SlidingPuzzle.state(grid=tuple(next_state)), 1))
+        return result
