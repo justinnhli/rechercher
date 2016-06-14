@@ -5,26 +5,28 @@ from .utils import PriorityQueue
 
 Action = namedtuple('Action', ('name', 'successor', 'cost'))
 
-@total_ordering
-class _SearchNode:
-    def __init__(self, path, actions):
-        self.path = path
-        self.actions = actions
-    @property
-    def state(self):
-        return self.path[-1]
-    @property
-    def cost(self):
-        return sum(action.cost for action in self.actions)
-    @property
-    def depth(self):
-        return len(self.path)
-    def __lt__(self, other):
-        return (self.cost, self.path) < (other.cost, other.path)
-    def __hash__(self):
-        return hash((self.cost, tuple(self.path)))
-    def take_action(self, action):
-        return _SearchNode(self.path + [action.successor,], self.actions + [action,])
+def state_to_node(state):
+    @total_ordering
+    class _SearchNode:
+        def __init__(self, path, actions):
+            self.path = path
+            self.actions = actions
+        @property
+        def state(self):
+            return self.path[-1]
+        @property
+        def cost(self):
+            return sum(action.cost for action in self.actions)
+        @property
+        def depth(self):
+            return len(self.path)
+        def __lt__(self, other):
+            return (self.cost, self.path) < (other.cost, other.path)
+        def __hash__(self):
+            return hash((self.cost, tuple(self.path)))
+        def take_action(self, action):
+            return _SearchNode(self.path + [action.successor,], self.actions + [action,])
+    return _SearchNode([state,], [])
 
 class SearchProblem:
     @staticmethod
@@ -44,9 +46,6 @@ class SearchProblem:
         if self._heuristic:
             return self._heuristic(state)
         return 0
-
-def state_to_node(state):
-    return _SearchNode([state,], [])
 
 def search_algorithm_factory(priority_function):
     def search_algorithm(problem, state=None, verbose=False):
