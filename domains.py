@@ -185,3 +185,21 @@ class SlidingPuzzle(SearchProblem):
                 next_state[swap_index] = 0
                 result.append(Action(None, SlidingPuzzle.state(grid=tuple(next_state)), 1))
         return result
+
+class PolynomialDescent(SearchProblem):
+    @staticmethod
+    def state(**kwargs):
+        return namedtuple('ParabolaDescentState', ('x',))(**kwargs)
+    @staticmethod
+    def heuristic(goal):
+        return (lambda state: 2 * (state.x - 4) * (state.x - 2) * (2 * state.x + 2) * (2 * state.x + 4))
+    def __init__(self, start):
+        super().__init__(
+                PolynomialDescent.state(x=start),
+                None,
+                PolynomialDescent.heuristic(None))
+    def successors(self, state):
+        results = []
+        for i in (-1, 1):
+            results.append(Action('{:+.1f}'.format(i), PolynomialDescent.state(x=state.x + i), abs(i)))
+        return results

@@ -70,5 +70,13 @@ class Search_SlidingPuzzle(unittest.TestCase):
         self.assertEqual(len(solution.path), 20)
         self.assertEqual(num_visited, 700)
 
+class Search_Polynomial(unittest.TestCase):
+    def test_beam_left(self):
+        self.assertEqual(rechercher.beam_search(rechercher.domains.PolynomialDescent(-10)).state.x, -2)
+    def test_beam_middle(self):
+        self.assertEqual(rechercher.beam_search(rechercher.domains.PolynomialDescent(0)).state.x, -1)
+    def test_beam_right(self):
+        self.assertEqual(rechercher.beam_search(rechercher.domains.PolynomialDescent(10)).state.x, 3)
+
 if __name__ == "__main__":
     unittest.main()

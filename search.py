@@ -81,14 +81,13 @@ astar_search = search_algorithm_factory((lambda problem, node: node.cost + probl
 
 def beam_search(problem, state=None):
     if state is None:
-        cur_node = state_to_node(problem.initial_state)
+        cur_node = state_to_node(problem.initial_state())
     else:
         cur_node = state_to_node(state)
     while True:
-        try:
-            cur_node = min(
-                    (cur_node.take_action(action) for action in problem.successors(cur_node.state)),
-                    key=(lambda node: problem.heuristic_cost(node.state)))
-        except:
-            break
-    return cur_node
+        successors = [cur_node.take_action(action) for action in problem.successors(cur_node.state)]
+        successors = sorted(successors, key=(lambda node: problem.heuristic_cost(node.state)))
+        if problem.heuristic_cost(successors[0].state) >= problem.heuristic_cost(cur_node.state):
+            return cur_node
+        else:
+            cur_node = successors[0]
