@@ -141,7 +141,7 @@ class WordLadder(SearchProblem):
 class SlidingPuzzle(SearchProblem):
     @staticmethod
     def state(**kwargs):
-        return namedtuple("SlidingPuzzleState", "grid")(**kwargs)
+        return namedtuple('SlidingPuzzleState', ('grid',))(**kwargs)
     @staticmethod
     def in_bounds(row, col, size):
         return (0 <= row < size and 0 <= col < size)
@@ -164,8 +164,8 @@ class SlidingPuzzle(SearchProblem):
         return _heuristic
     def __init__(self, order):
         assert len(order) == len(set(order))
-        self.size = math.sqrt(len(order))
-        assert self.size.is_integer()
+        self.size = int(math.sqrt(len(order)))
+        assert self.size ** 2 == len(order)
         self.size = int(self.size)
         order = tuple(order)
         self.goal = SlidingPuzzle.state(grid=tuple(sorted(order)[1:] + [0,]))
