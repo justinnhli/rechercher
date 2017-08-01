@@ -203,3 +203,41 @@ class PolynomialDescent(SearchProblem):
         for i in (-1, 1):
             results.append(Action('{:+.1f}'.format(i), PolynomialDescent.state(x=state.x + i), abs(i)))
         return results
+
+class MissionariesCannibals(SearchProblem):
+    @staticmethod
+    def state(*args):
+        return namedtuple('MCState', ('m', 'c', 'b'))(*args)
+    @staticmethod
+    def heuristic(goal):
+        return 0
+    def __init__(self):
+        super().__init__(
+                MissionariesCannibals.state(3, 3, 1),
+                (lambda s: s == namedtuple('MCState', ('m', 'c', 'b'))(0, 0, 0)),
+                None)
+    def successors(self, state):
+        results = []
+        if state.b == 1:
+            num_m = state.m
+            num_c = state.c
+        else:
+            num_m = 3 - state.m
+            num_c = 3 - state.c
+        for m, c in ((0, 1), (0, 2), (1, 1), (1, 0), (2, 0)):
+            if m > num_m or c > num_c:
+                continue
+            if state.b == 1:
+                new_m = num_m - m
+                new_c = num_c - c
+                new_b = 0
+            else:
+                new_m = state.m + m
+                new_c = state.c + c
+                new_b = 1
+            action = Action(
+                    '{}M, {}C'.format(m, c),
+                    MissionariesCannibals.state(new_m, new_c, new_b),
+                    1)
+            results.append(action)
+        return results
